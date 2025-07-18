@@ -115,6 +115,35 @@ Create a `.proxy.conf` file in your project directory:
 ./proxy reverse --help        # Reverse mode help
 ```
 
+## Installation
+
+### Download Pre-built Binaries
+
+Download the latest release from the [GitHub releases page](https://github.com/your-username/proxy/releases).
+
+Available for:
+- Linux (x64, ARM64)
+- macOS (Intel, Apple Silicon)
+- Windows (x64, ARM64)
+
+### Build from Source
+
+```bash
+git clone https://github.com/your-username/proxy.git
+cd proxy
+go build -o proxy .
+```
+
+### Using Make
+
+```bash
+make build          # Build for current platform
+make linux          # Build for Linux
+make darwin          # Build for macOS
+make windows         # Build for Windows
+make all             # Build for all platforms
+```
+
 ## Features
 
 - 🖥️ **Beautiful TUI Dashboard**: Real-time monitoring with professional table formatting

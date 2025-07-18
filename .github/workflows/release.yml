@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          # Create release directory
+          mkdir -p release
+          
+          # Build for multiple platforms
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o release/proxy-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o release/proxy-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o release/proxy-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o release/proxy-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o release/proxy-windows-amd64.exe .
+          GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o release/proxy-windows-arm64.exe .
+          
+          # Create checksums
+          cd release
+          sha256sum * > checksums.txt
+          cd ..
+
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          echo "## What's New" > release_notes.md
+          echo "" >> release_notes.md
+          echo "TCP Proxy ${{ steps.get_version.outputs.VERSION }}" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Downloads" >> release_notes.md
+          echo "- **Linux (x64)**: \`proxy-linux-amd64\`" >> release_notes.md
+          echo "- **Linux (ARM64)**: \`proxy-linux-arm64\`" >> release_notes.md
+          echo "- **macOS (Intel)**: \`proxy-darwin-amd64\`" >> release_notes.md
+          echo "- **macOS (Apple Silicon)**: \`proxy-darwin-arm64\`" >> release_notes.md
+          echo "- **Windows (x64)**: \`proxy-windows-amd64.exe\`" >> release_notes.md
+          echo "- **Windows (ARM64)**: \`proxy-windows-arm64.exe\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Installation" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "# Download for your platform" >> release_notes.md
+          echo "curl -LO https://github.com/\${{ github.repository }}/releases/download/${{ steps.get_version.outputs.VERSION }}/proxy-linux-amd64" >> release_notes.md
+          echo "chmod +x proxy-linux-amd64" >> release_notes.md
+          echo "mv proxy-linux-amd64 /usr/local/bin/proxy" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Usage" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "proxy --help                # Get help" >> release_notes.md
+          echo "proxy                       # Forward mode with TUI" >> release_notes.md
+          echo "proxy reverse               # Reverse mode with TUI" >> release_notes.md
+          echo "proxy --headless            # Background mode" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Verify checksums" >> release_notes.md
+          echo "\`\`\`bash" >> release_notes.md
+          echo "sha256sum -c checksums.txt" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          release_name: TCP Proxy ${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-linux-amd64
+          asset_name: proxy-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-linux-arm64
+          asset_name: proxy-linux-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-darwin-amd64
+          asset_name: proxy-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-darwin-arm64
+          asset_name: proxy-darwin-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows AMD64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-windows-amd64.exe
+          asset_name: proxy-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows ARM64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/proxy-windows-arm64.exe
+          asset_name: proxy-windows-arm64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Checksums
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/checksums.txt
+          asset_name: checksums.txt
+          asset_content_type: text/plain
