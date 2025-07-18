@@ -1,31 +1,40 @@
 # TCP Proxy
 
-A simple TCP proxy tool in Go that supports both forward and reverse proxy modes, with automatic configuration file support.
+![TCP Proxy Dashboard](docs/tui.png)
+
+A simple TCP proxy tool in Go that supports both forward and reverse proxy modes, with automatic configuration file support and a beautiful TUI dashboard.
 
 ## Usage
 
-### Auto Mode (Recommended)
-Use a `.proxy.conf` file to automatically set up multiple proxies:
+### Auto Mode with TUI (Recommended)
+Use a `.proxy.conf` file to automatically set up multiple proxies with a beautiful dashboard:
 
 **Auto Forward Mode** (run on client):
 ```bash
-proxy
+proxy                    # TUI dashboard (default)
+proxy --headless         # No TUI (background mode)
+proxy forward            # TUI dashboard (explicit)
+proxy forward --headless # No TUI (background mode)
 ```
 
 **Auto Reverse Mode** (run on server):
 ```bash
-proxy -r
+proxy reverse            # TUI dashboard (default)
+proxy reverse --headless # No TUI (background mode)
+proxy r                  # TUI dashboard (shorthand)
+proxy r --headless       # No TUI (background mode)
 ```
 
 ### Manual Mode
 **Forward Mode** - Forward localhost connections to remote servers:
 ```bash
-proxy [remote]:[port] [localPort]
+proxy forward [remote]:[port] [localPort]
 ```
 
 **Reverse Mode** - Expose localhost services on all network interfaces:
 ```bash
-proxy -r [localPort] [externalPort]
+proxy reverse [localPort] [externalPort]
+proxy r [localPort] [externalPort]          # shorthand
 ```
 
 ## Configuration File
@@ -60,8 +69,11 @@ Create a `.proxy.conf` file in your project directory:
    # Create config file in your project
    echo "8782:Backend API" > .proxy.conf
    
-   # Start reverse proxy (exposes localhost:8782 on Tailscale)
-   ./proxy -r
+   # Start reverse proxy with TUI dashboard
+   ./proxy reverse
+   
+   # Or run in background without TUI
+   ./proxy reverse --headless
    ```
 
 2. **On your client machine:**
@@ -69,8 +81,11 @@ Create a `.proxy.conf` file in your project directory:
    # Set remote host environment variable
    export PROXY_REMOTE_HOST=work-mbp.tailnet.ts.net
    
-   # Start forward proxy (connects localhost:8782 to remote)
+   # Start forward proxy with TUI dashboard (default behavior)
    ./proxy
+   
+   # Or run in background without TUI
+   ./proxy --headless
    ```
 
 3. **Now you can access your remote service locally:**
@@ -82,23 +97,34 @@ Create a `.proxy.conf` file in your project directory:
 
 **Forward Mode:**
 ```bash
-./proxy myserver.tailnet.ts.net:8080 3000
+./proxy forward myserver.tailnet.ts.net:8080 3000
 ```
 
 **Reverse Mode:**
 ```bash
-./proxy -r 8080 8080
+./proxy reverse 8080 8080
+./proxy r 8080 8080        # shorthand
+```
+
+### Help and Documentation
+
+**Get help:**
+```bash
+./proxy --help                # General help
+./proxy forward --help        # Forward mode help
+./proxy reverse --help        # Reverse mode help
 ```
 
 ## Features
 
-- **Forward mode**: Connect localhost to remote services
-- **Reverse mode**: Expose localhost services to the network
-- Single Go file with no external dependencies
-- Handles multiple concurrent connections
-- Basic error handling and connection logging
-- Tests connectivity before starting proxy
-- Bidirectional data forwarding using goroutines
+- 🖥️ **Beautiful TUI Dashboard**: Real-time monitoring with professional table formatting
+- 🔄 **Forward & Reverse Modes**: Connect localhost to remote services or expose services to network
+- 📝 **Config File Support**: Automatically handle multiple ports via `.proxy.conf`
+- 📊 **Connection Statistics**: Track active connections, total connections, and data transferred
+- 🚀 **Concurrent Proxies**: Handle multiple services simultaneously
+- 🎯 **TUI-First Design**: Beautiful interface by default, `--headless` for background mode
+- 🪶 **Lightweight**: Minimal dependencies, modular design
+- 🛡️ **Error Handling**: Comprehensive error reporting and graceful degradation
 
 ## How it works
 
